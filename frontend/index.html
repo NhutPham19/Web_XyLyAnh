@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Lọc Ma Trận — Mean · Median · Prewitt</title>
+    <meta name="description" content="Công cụ lọc ma trận trực quan: Mean Filter, Median Filter và Prewitt Edge Detection với xem từng bước tính toán.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- HERO HEADER -->
+    <header class="hero">
+        <div class="hero-bg-orb orb1"></div>
+        <div class="hero-bg-orb orb2"></div>
+        <div class="hero-bg-orb orb3"></div>
+        <div class="wrap hero-content">
+            <div class="hero-badge">
+                <span class="badge-dot"></span>
+                Xử lý ảnh
+            </div>
+            <h1>Lọc <span class="hero-accent">Ma Trận</span></h1>
+            <div class="hero-chips">
+                <span class="chip">Mean Filter</span>
+                <span class="chip">Median Filter</span>
+                <span class="chip">Prewitt Edge</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="wrap">
+
+        <!-- STEP 1: MATRIX INPUT -->
+        <section class="card" id="step1">
+            <h2>
+                <span class="step-badge">1</span>
+                Nhập ma trận đầu vào
+            </h2>
+
+            <div class="row">
+                <div class="field-group">
+                    <label for="rows">
+                        Số hàng <span class="range-hint">(1–10)</span>
+                    </label>
+                    <div class="step">
+                        <button type="button" class="step-btn" aria-label="Giảm số hàng">−</button>
+                        <input id="rows" type="number" min="1" max="10" value="5">
+                        <button type="button" class="step-btn" aria-label="Tăng số hàng">+</button>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label for="cols">
+                        Số cột <span class="range-hint">(1–10)</span>
+                    </label>
+                    <div class="step">
+                        <button type="button" class="step-btn" aria-label="Giảm số cột">−</button>
+                        <input id="cols" type="number" min="1" max="10" value="5">
+                        <button type="button" class="step-btn" aria-label="Tăng số cột">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scroll">
+                <div id="mat"></div>
+            </div>
+
+            <div class="actions">
+                <button class="ghost" id="sample" type="button">Dùng ma trận mẫu</button>
+                <button class="ghost ghost-danger" id="clear" type="button">Xóa hết</button>
+            </div>
+        </section>
+
+        <!-- STEP 2: METHOD SELECT -->
+        <section class="card" id="step2">
+            <h2>
+                <span class="step-badge">2</span>
+                Chọn phương pháp lọc
+            </h2>
+
+            <div class="method-grid" role="group" aria-label="Phương pháp lọc">
+                <button type="button" class="method-card" data-m="mean" aria-pressed="true">
+                    <span class="method-icon mean-icon">μ</span>
+                    <span class="method-name">Mean</span>
+                    <span class="method-desc">Lọc trung bình</span>
+                </button>
+                <button type="button" class="method-card" data-m="median" aria-pressed="false">
+                    <span class="method-icon median-icon">M</span>
+                    <span class="method-name">Median</span>
+                    <span class="method-desc">Lọc trung vị</span>
+                </button>
+                <button type="button" class="method-card" data-m="prewitt" aria-pressed="false">
+                    <span class="method-icon prewitt-icon">∇</span>
+                    <span class="method-name">Prewitt</span>
+                    <span class="method-desc">Phát hiện biên</span>
+                </button>
+            </div>
+
+            <div class="field-group" style="max-width:260px;margin-top:20px">
+                <label for="k">
+                    Kích thước cửa sổ k×k <span class="range-hint">(1–9)</span>
+                </label>
+                <div class="step">
+                    <button type="button" class="step-btn" aria-label="Giảm k">−</button>
+                    <input id="k" type="number" min="1" max="9" value="3">
+                    <button type="button" class="step-btn" aria-label="Tăng k">+</button>
+                </div>
+            </div>
+            <p class="hint" id="kn"></p>
+
+            <div id="kers" hidden>
+                <h3>Kernel Gx <span class="kernel-label">biên dọc</span></h3>
+                <div class="scroll"><div id="gx"></div></div>
+                <h3>Kernel Gy <span class="kernel-label">biên ngang</span></h3>
+                <div class="scroll"><div id="gy"></div></div>
+                <div class="actions">
+                    <button class="ghost" id="rk" type="button">Đặt lại kernel Prewitt</button>
+                </div>
+                <p class="hint">Có thể sửa từng ô. Kernel được nhân trực tiếp với cửa sổ, không lật.</p>
+            </div>
+        </section>
+
+        <!-- CTA BAR -->
+        <div class="bar">
+            <p id="err" role="alert"></p>
+            <button class="cta" id="run" type="button">Tính kết quả</button>
+        </div>
+
+        <!-- RESULTS -->
+        <section class="card result-card" id="out" hidden>
+            <h2>
+                <span class="step-badge result-badge">✓</span>
+                Kết quả
+            </h2>
+            <div id="res"></div>
+            <div class="divider"></div>
+            <h3>Xem từng bước</h3>
+            <p class="hint">Chạm vào một ô kết quả để xem cửa sổ và phép tính. Ô nét đứt là phần padding 0.</p>
+            <div class="calc" id="detail" hidden></div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
