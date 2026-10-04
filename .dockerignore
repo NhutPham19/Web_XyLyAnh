@@ -1,0 +1,13 @@
+**/.git
+**/.github
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/TestResults
+**/node_modules
+*.user
+*.suo
+*.md
+TaiLieuCode_XLA/
+tests/

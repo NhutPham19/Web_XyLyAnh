@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebXuLyAnh.Api", "backend\WebXuLyAnh.Api.csproj", "{8AD74BFE-F82D-4443-9C36-8C2694938B89}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{27E6C4E5-1413-4A0C-B15B-2E7828F59C22}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebXuLyAnh.Tests", "tests\WebXuLyAnh.Tests\WebXuLyAnh.Tests.csproj", "{E8CBDB79-36D6-4D33-A70F-51EB0AC68E00}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8AD74BFE-F82D-4443-9C36-8C2694938B89}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8AD74BFE-F82D-4443-9C36-8C2694938B89}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8AD74BFE-F82D-4443-9C36-8C2694938B89}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8AD74BFE-F82D-4443-9C36-8C2694938B89}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8CBDB79-36D6-4D33-A70F-51EB0AC68E00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8CBDB79-36D6-4D33-A70F-51EB0AC68E00}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8CBDB79-36D6-4D33-A70F-51EB0AC68E00}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8CBDB79-36D6-4D33-A70F-51EB0AC68E00}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E8CBDB79-36D6-4D33-A70F-51EB0AC68E00} = {27E6C4E5-1413-4A0C-B15B-2E7828F59C22}
+	EndGlobalSection
+EndGlobal
