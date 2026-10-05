@@ -30,11 +30,16 @@ public static class MatrixValidator
         // 3. Validate Method
         bool methodOk = ValidateMethodElement(root, errors, out string method);
 
-        // 4. Validate Prewitt Config
+        // 4. Validate Prewitt & Compass Config
         PrewittConfigDto? prewittConfig = null;
+        CompassConfigDto? compassConfig = null;
         if (methodOk && method == "PREWITT")
         {
             ValidatePrewittConfigElement(root, kOk ? k : 3, errors, out prewittConfig);
+        }
+        else if (methodOk && method == "COMPASS")
+        {
+            ValidateCompassConfigElement(root, kOk ? k : 3, errors, out compassConfig);
         }
 
         // 5. Options
@@ -67,6 +72,7 @@ public static class MatrixValidator
             K: k,
             Method: method,
             PrewittConfig: prewittConfig,
+            CompassConfig: compassConfig,
             Options: new FilterOptionsDto(includeSteps)
         );
         return true;
@@ -99,7 +105,7 @@ public static class MatrixValidator
         {
             errors.Add(new ValidationErrorDetail(
                 "methods", null, null, "INVALID_METHOD",
-                "Danh sách phương pháp không hợp lệ hoặc để trống. Chỉ chấp nhận MEAN, MEDIAN hoặc PREWITT."
+                "Danh sách phương pháp không hợp lệ hoặc để trống. Chỉ chấp nhận MEAN, MEDIAN, PREWITT hoặc COMPASS."
             ));
         }
         else
@@ -110,16 +116,16 @@ public static class MatrixValidator
                 {
                     errors.Add(new ValidationErrorDetail(
                         "methods", null, null, "INVALID_METHOD",
-                        "Phương pháp lọc phải là chuỗi ký tự (MEAN, MEDIAN hoặc PREWITT)."
+                        "Phương pháp lọc phải là chuỗi ký tự (MEAN, MEDIAN, PREWITT hoặc COMPASS)."
                     ));
                     break;
                 }
                 var m = elem.GetString()?.Trim().ToUpperInvariant() ?? "";
-                if (m != "MEAN" && m != "MEDIAN" && m != "PREWITT")
+                if (m != "MEAN" && m != "MEDIAN" && m != "PREWITT" && m != "COMPASS")
                 {
                     errors.Add(new ValidationErrorDetail(
                         "methods", null, null, "INVALID_METHOD",
-                        $"Phương pháp lọc '{elem.GetString()}' không hợp lệ. Chỉ chấp nhận MEAN, MEDIAN hoặc PREWITT."
+                        $"Phương pháp lọc '{elem.GetString()}' không hợp lệ. Chỉ chấp nhận MEAN, MEDIAN, PREWITT hoặc COMPASS."
                     ));
                     break;
                 }
@@ -134,6 +140,12 @@ public static class MatrixValidator
         if (methods.Contains("PREWITT"))
         {
             ValidatePrewittConfigElement(root, kOk ? k : 3, errors, out prewittConfig);
+        }
+
+        CompassConfigDto? compassConfig = null;
+        if (methods.Contains("COMPASS"))
+        {
+            ValidateCompassConfigElement(root, kOk ? k : 3, errors, out compassConfig);
         }
 
         bool includeSteps = true;
@@ -164,6 +176,7 @@ public static class MatrixValidator
             K: k,
             Methods: methods,
             PrewittConfig: prewittConfig,
+            CompassConfig: compassConfig,
             Options: new FilterOptionsDto(includeSteps)
         );
         return true;
@@ -300,22 +313,42 @@ public static class MatrixValidator
         {
             errors.Add(new ValidationErrorDetail(
                 "method", null, null, "INVALID_METHOD",
-                "Phương pháp lọc không hợp lệ. Chỉ chấp nhận MEAN, MEDIAN hoặc PREWITT."
+                "Phương pháp lọc không hợp lệ. Chỉ chấp nhận MEAN, MEDIAN, PREWITT hoặc COMPASS."
             ));
             return false;
         }
 
         var m = methodProp.GetString()?.Trim().ToUpperInvariant() ?? "";
-        if (m != "MEAN" && m != "MEDIAN" && m != "PREWITT")
+        if (m != "MEAN" && m != "MEDIAN" && m != "PREWITT" && m != "COMPASS")
         {
             errors.Add(new ValidationErrorDetail(
                 "method", null, null, "INVALID_METHOD",
-                "Phương pháp lọc không hợp lệ. Chỉ chấp nhận MEAN, MEDIAN hoặc PREWITT."
+                "Phương pháp lọc không hợp lệ. Chỉ chấp nhận MEAN, MEDIAN, PREWITT hoặc COMPASS."
             ));
             return false;
         }
         method = m;
         return true;
+    }
+
+    private static void ValidateCompassConfigElement(
+        JsonElement root,
+        int k,
+        List<ValidationErrorDetail> errors,
+        out CompassConfigDto? compassConfig)
+    {
+        compassConfig = null;
+        bool hasConfig = root.TryGetProperty("compassConfig", out var configProp) &&
+                         configProp.ValueKind == JsonValueKind.Object;
+
+        if (hasConfig && configProp.TryGetProperty("baseKernel", out var baseProp) && baseProp.ValueKind == JsonValueKind.Array)
+        {
+            int[][]? baseKernel = ValidateKernel("baseKernel", baseProp, k, errors);
+            if (baseKernel != null)
+            {
+                compassConfig = new CompassConfigDto(baseKernel);
+            }
+        }
     }
 
     private static void ValidatePrewittConfigElement(

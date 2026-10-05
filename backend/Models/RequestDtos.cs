@@ -5,12 +5,17 @@ public record MatrixFilterRequest(
     int K,
     string Method,
     PrewittConfigDto? PrewittConfig = null,
+    CompassConfigDto? CompassConfig = null,
     FilterOptionsDto? Options = null
 );
 
 public record PrewittConfigDto(
     int[][]? KernelX,
     int[][]? KernelY
+);
+
+public record CompassConfigDto(
+    int[][]? BaseKernel
 );
 
 public record FilterOptionsDto(
@@ -22,5 +27,6 @@ public record BatchFilterRequest(
     int K,
     List<string> Methods,
     PrewittConfigDto? PrewittConfig = null,
+    CompassConfigDto? CompassConfig = null,
     FilterOptionsDto? Options = null
 );

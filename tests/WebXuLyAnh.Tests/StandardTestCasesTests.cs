@@ -330,4 +330,25 @@ public class StandardTestCasesTests
         Assert.Equal(0, response.Data["median"]!.Results[0][0].RoundedInt);
         Assert.Equal(160, response.Data["prewitt"]!.Results[0][0].RoundedInt);
     }
+
+    [Fact]
+    public void TestCase_Compass_8Directions_ComputesMaxResponse()
+    {
+        int[][] matrix = [
+            [10, 20, 30],
+            [40, 50, 60],
+            [70, 80, 90]
+        ];
+
+        var request = new MatrixFilterRequest(matrix, 3, "COMPASS");
+        var response = _filterService.ApplyFilter(request);
+
+        Assert.True(response.Success);
+        Assert.Equal("COMPASS", response.Method);
+        Assert.Equal(3, response.MatrixSize.Rows);
+        Assert.Equal(3, response.MatrixSize.Cols);
+        Assert.NotNull(response.Results[1][1].Step?.Compass);
+        Assert.Equal(8, response.Results[1][1].Step?.Compass?.Directions.Count);
+        Assert.True(response.Results[1][1].RoundedInt >= 0);
+    }
 }

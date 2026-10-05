@@ -114,6 +114,11 @@
                     <span class="method-name">Prewitt</span>
                     <span class="method-desc">Phát hiện biên</span>
                 </button>
+                <button type="button" class="method-card" data-m="compass" aria-pressed="false">
+                    <span class="method-icon compass-icon">🧭</span>
+                    <span class="method-name">Compass</span>
+                    <span class="method-desc">La bàn (8 hướng)</span>
+                </button>
             </div>
 
             <div class="field-group" style="margin-top:20px">
@@ -156,6 +161,32 @@
                     </div>
                 </div>
                 <p class="hint">💡 Bạn có thể bấm chọn mẫu nhanh ở trên hoặc tự do sửa từng ô. <b>Quy ước tích chập Prewitt:</b> kernel được lật 180° trước khi nhân với cửa sổ.</p>
+            </div>
+
+            <!-- COMPASS SECTION -->
+            <div id="compassSection" hidden>
+                <div class="prewitt-toolbar">
+                    <span class="toolbar-label">⚡ Mẫu mặt nạ gốc K₀:</span>
+                    <div class="prewitt-presets" role="group" aria-label="Mẫu mặt nạ La bàn">
+                        <button type="button" class="preset-chip active" id="btnCompassStd" title="Mặt nạ gốc Prewitt chuẩn">Prewitt chuẩn</button>
+                        <button type="button" class="preset-chip" id="btnCompassDiag" title="Mặt nạ gốc từ vở ghi">Vở ghi</button>
+                        <button type="button" class="preset-chip" id="btnCompassKirsch" title="Mặt nạ gốc Kirsch (trọng số 5 và -3)">Kirsch (5, -3)</button>
+                        <button type="button" class="preset-chip" id="btnRotateCompassCCW" title="Thử xoay mặt nạ gốc 45° ngược chiều kim đồng hồ">⟲ Xoay thử 45° CCW</button>
+                    </div>
+                </div>
+
+                <div class="kernel-wrapper" style="grid-template-columns: 1fr;">
+                    <div class="kernel-box">
+                        <h3>Mặt nạ gốc K₀ <span class="kernel-label" id="labelCompassBase">0° (Gốc)</span></h3>
+                        <div class="scroll"><div id="compassBaseKernel"></div></div>
+                        <p class="hint" style="margin-top: 8px;">💡 Bạn có thể sửa từng ô trong mặt nạ gốc K₀. 8 hướng la bàn bên dưới sẽ tự động xoay ngược chiều kim đồng hồ (45° CCW) theo mặt nạ này.</p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h4 style="margin: 0 0 10px; font-size: 0.95rem; color: var(--ink);">🧭 8 Mặt nạ la bàn sinh tự động (Xoay 45° ngược KĐH):</h4>
+                    <div class="compass-8-grid" id="compass8Preview"></div>
+                </div>
             </div>
         </section>
 

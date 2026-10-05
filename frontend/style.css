@@ -499,6 +499,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--a2); outlin
 .mean-icon { background: linear-gradient(135deg, var(--mean-a), var(--mean-b)); color: #fff; }
 .median-icon { background: linear-gradient(135deg, var(--median-a), var(--median-b)); color: #fff; }
 .prewitt-icon { background: linear-gradient(135deg, var(--prewitt-a), var(--prewitt-b)); color: #fff; }
+.compass-icon { background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; }
 
 .method-card[aria-pressed="true"] .method-icon { box-shadow: 0 6px 16px rgba(0,0,0,.2); transform: scale(1.05); }
 
@@ -589,6 +590,70 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--a2); outlin
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+/* ================================================================
+   COMPASS 8 DIRECTIONS GRID PREVIEW
+================================================================ */
+.compass-8-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+.compass-mini-card {
+  background: var(--cell);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px 8px;
+  text-align: center;
+  transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+  box-shadow: var(--sh-xs);
+}
+.compass-mini-card:hover {
+  border-color: var(--a2);
+  transform: translateY(-2px);
+  box-shadow: var(--sh-sm);
+}
+.compass-mini-title {
+  font-size: .74rem;
+  font-weight: 700;
+  color: var(--a1);
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.compass-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  width: 84px;
+  margin: 0 auto;
+}
+.compass-mini-cell {
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pad);
+  border-radius: 3px;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-family: ui-monospace, monospace;
+}
+.compass-mini-cell.neg {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.08);
+}
+.compass-mini-cell.pos {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+.compass-mini-cell.zero {
+  color: var(--muted);
+  opacity: 0.55;
 }
 
 /* ================================================================

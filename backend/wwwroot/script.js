@@ -79,6 +79,16 @@ const el = {
     labelGx: document.getElementById('labelGx'),
     labelGy: document.getElementById('labelGy'),
 
+    // Phương pháp Compass (La bàn)
+    compassSection: document.getElementById('compassSection'),
+    compassBaseKernel: document.getElementById('compassBaseKernel'),
+    labelCompassBase: document.getElementById('labelCompassBase'),
+    compass8Preview: document.getElementById('compass8Preview'),
+    btnCompassStd: document.getElementById('btnCompassStd'),
+    btnCompassDiag: document.getElementById('btnCompassDiag'),
+    btnCompassKirsch: document.getElementById('btnCompassKirsch'),
+    btnRotateCompassCCW: document.getElementById('btnRotateCompassCCW'),
+
     runBtn: document.getElementById('run'),
     runBtnText: document.getElementById('runBtnText'),
     runSpinner: document.getElementById('runSpinner'),
@@ -510,9 +520,16 @@ function setMethod(method) {
 
     if (currentMethod === 'prewitt') {
         el.kersSection.hidden = false;
+        if (el.compassSection) el.compassSection.hidden = true;
         renderPrewittKernels();
+    } else if (currentMethod === 'compass') {
+        el.kersSection.hidden = true;
+        if (el.compassSection) el.compassSection.hidden = false;
+        if (currentK !== 3) updateK(3);
+        renderCompassBaseKernel();
     } else {
         el.kersSection.hidden = true;
+        if (el.compassSection) el.compassSection.hidden = true;
     }
 }
 
@@ -649,6 +666,197 @@ function getKernelData(container) {
 }
 
 // ============================================================================
+// 6.2 QUẢN LÝ PHƯƠNG PHÁP LA BÀN (COMPASS EDGE DETECTOR - 8 HƯỚNG CCW)
+// ============================================================================
+const COMPASS_PRESETS = {
+    standard: {
+        name: 'standard',
+        label: 'Prewitt chuẩn',
+        kernel: [
+            [-1, -1, -1],
+            [ 0,  0,  0],
+            [ 1,  1,  1]
+        ]
+    },
+    notebook: {
+        name: 'notebook',
+        label: 'Vở ghi',
+        kernel: [
+            [ 0, -1, -1],
+            [ 0,  0,  0],
+            [ 1,  1,  0]
+        ]
+    },
+    kirsch: {
+        name: 'kirsch',
+        label: 'Kirsch (5, -3)',
+        kernel: [
+            [ 5,  5,  5],
+            [-3,  0, -3],
+            [-3, -3, -3]
+        ]
+    }
+};
+
+const COMPASS_DIRECTIONS = [
+    '0° (Bắc / N)',
+    '45° (Tây Bắc / NW)',
+    '90° (Tây / W)',
+    '135° (Tây Nam / SW)',
+    '180° (Nam / S)',
+    '225° (Đông Nam / SE)',
+    '270° (Đông / E)',
+    '315° (Đông Bắc / NE)'
+];
+
+// 8 tọa độ chu vi 3x3 ngược chiều kim đồng hồ (CCW)
+const PERIMETER_CCW = [
+    [0, 0], [1, 0], [2, 0],
+    [2, 1], [2, 2], [1, 2],
+    [0, 2], [0, 1]
+];
+
+let currentCompassPreset = 'standard';
+
+function rotateKernelCCW(k) {
+    const next = [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0]
+    ];
+    next[1][1] = k[1][1];
+    for (let p = 0; p < 8; p++) {
+        const [fromR, fromC] = PERIMETER_CCW[p];
+        const [toR, toC] = PERIMETER_CCW[(p + 1) % 8];
+        next[toR][toC] = k[fromR][fromC];
+    }
+    return next;
+}
+
+function generate8CompassKernels(baseKernel) {
+    const kernels = [baseKernel];
+    let curr = baseKernel;
+    for (let d = 1; d < 8; d++) {
+        curr = rotateKernelCCW(curr);
+        kernels.push(curr);
+    }
+    return kernels;
+}
+
+function getCompassBaseKernelData() {
+    if (!el.compassBaseKernel) return null;
+    const inputs = el.compassBaseKernel.querySelectorAll('input');
+    if (inputs.length !== 9) return null;
+    const kernel = [];
+    for (let r = 0; r < 3; r++) {
+        const row = [];
+        for (let c = 0; c < 3; c++) {
+            const val = parseInt(inputs[r * 3 + c].value, 10);
+            if (isNaN(val)) return null;
+            row.push(val);
+        }
+        kernel.push(row);
+    }
+    return kernel;
+}
+
+function renderCompassBaseKernel(presetKey = currentCompassPreset) {
+    if (!el.compassBaseKernel) return;
+    el.compassBaseKernel.innerHTML = '';
+
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    grid.style.setProperty('--c', 3);
+
+    const preset = COMPASS_PRESETS[presetKey] || COMPASS_PRESETS.standard;
+    const base = preset.kernel;
+
+    for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+            const inp = document.createElement('input');
+            inp.type = 'number';
+            inp.dataset.r = r;
+            inp.dataset.c = c;
+            inp.setAttribute('inputmode', 'numeric');
+            inp.value = base[r][c];
+            inp.addEventListener('input', () => {
+                updateCompass8Preview();
+                if (el.btnCompassStd) el.btnCompassStd.classList.remove('active');
+                if (el.btnCompassDiag) el.btnCompassDiag.classList.remove('active');
+                if (el.btnCompassKirsch) el.btnCompassKirsch.classList.remove('active');
+            });
+            grid.appendChild(inp);
+        }
+    }
+
+    el.compassBaseKernel.appendChild(grid);
+    if (el.labelCompassBase) el.labelCompassBase.textContent = preset.label;
+
+    if (el.btnCompassStd) el.btnCompassStd.classList.toggle('active', presetKey === 'standard');
+    if (el.btnCompassDiag) el.btnCompassDiag.classList.toggle('active', presetKey === 'notebook');
+    if (el.btnCompassKirsch) el.btnCompassKirsch.classList.toggle('active', presetKey === 'kirsch');
+
+    updateCompass8Preview();
+}
+
+function updateCompass8Preview() {
+    if (!el.compass8Preview) return;
+    const baseKernel = getCompassBaseKernelData() || COMPASS_PRESETS.standard.kernel;
+    const kernels = generate8CompassKernels(baseKernel);
+
+    el.compass8Preview.innerHTML = '';
+    kernels.forEach((kMat, idx) => {
+        const card = document.createElement('div');
+        card.className = 'compass-mini-card';
+
+        const title = document.createElement('div');
+        title.className = 'compass-mini-title';
+        title.innerHTML = `<b>K${idx}</b>: ${COMPASS_DIRECTIONS[idx]}`;
+        card.appendChild(title);
+
+        const grid = document.createElement('div');
+        grid.className = 'compass-mini-grid';
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'compass-mini-cell';
+                const v = kMat[r][c];
+                cell.textContent = v;
+                if (v > 0) cell.classList.add('pos');
+                else if (v < 0) cell.classList.add('neg');
+                else cell.classList.add('zero');
+                grid.appendChild(cell);
+            }
+        }
+        card.appendChild(grid);
+        el.compass8Preview.appendChild(card);
+    });
+}
+
+function applyCompassPreset(presetKey) {
+    currentCompassPreset = presetKey;
+    renderCompassBaseKernel(presetKey);
+}
+
+function rotateCompassBaseCCW() {
+    const current = getCompassBaseKernelData() || COMPASS_PRESETS.standard.kernel;
+    const rotated = rotateKernelCCW(current);
+    const inputs = el.compassBaseKernel.querySelectorAll('input');
+    if (inputs.length === 9) {
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < 3; c++) {
+                inputs[r * 3 + c].value = rotated[r][c];
+            }
+        }
+    }
+    if (el.btnCompassStd) el.btnCompassStd.classList.remove('active');
+    if (el.btnCompassDiag) el.btnCompassDiag.classList.remove('active');
+    if (el.btnCompassKirsch) el.btnCompassKirsch.classList.remove('active');
+    if (el.labelCompassBase) el.labelCompassBase.textContent = 'Đã xoay CCW';
+    updateCompass8Preview();
+}
+
+// ============================================================================
 // 7. VALIDATION DỮ LIỆU ĐẦU VÀO
 // ============================================================================
 function showError(msg) {
@@ -703,6 +911,8 @@ function validateInputs() {
     }
 
     let prewittConfig = null;
+    let compassConfig = null;
+
     if (currentMethod === 'prewitt') {
         const kx = getKernelData(el.gxContainer);
         const ky = getKernelData(el.gyContainer);
@@ -711,6 +921,17 @@ function validateInputs() {
             return null;
         }
         prewittConfig = { kernelX: kx, kernelY: ky };
+    } else if (currentMethod === 'compass') {
+        if (currentK !== 3) {
+            showError('Lỗi: Phương pháp La bàn yêu cầu kích thước cửa sổ 3×3.');
+            return null;
+        }
+        const base = getCompassBaseKernelData();
+        if (!base) {
+            showError('Lỗi: Các ô trong Mặt nạ gốc La bàn (K₀) phải là số nguyên hợp lệ.');
+            return null;
+        }
+        compassConfig = { baseKernel: base };
     }
 
     return {
@@ -718,6 +939,7 @@ function validateInputs() {
         k: currentK,
         method: currentMethod.toUpperCase(),
         prewittConfig,
+        compassConfig,
         options: { includeSteps: true }
     };
 }
@@ -1040,6 +1262,45 @@ function renderStepDetail(r, c) {
                 </div>
             </div>
         `;
+    } else if (step.compass) {
+        html += `
+            <div class="calc-section-title">Công thức La bàn 8 hướng (Compass Gradient Masks):</div>
+            <div class="calc-formula-card">
+                <div><b>Quy tắc:</b> Xoay mặt nạ K₀ ngược chiều KĐH (45° CCW) qua 8 hướng, tích chập (lật 180°), lấy trị tuyệt đối và chọn phản hồi cực đại <b>Max</b>:</div>
+                <div style="margin-top: 8px; padding: 8px 12px; background: rgba(99, 102, 241, 0.08); border-radius: 6px; font-weight: 600; color: var(--a1);">
+                    ${step.compass.formula}
+                </div>
+                <div style="margin-top: 10px; font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 6px;">Chi tiết phản hồi từng hướng (|gᵢ|):</div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+        `;
+
+        step.compass.directions.forEach(d => {
+            const isWinner = d.index === step.compass.bestDirectionIndex;
+            html += `
+                <div style="padding: 6px 10px; border-radius: 6px; border: 1.5px solid ${isWinner ? 'var(--a1)' : 'var(--line)'}; background: ${isWinner ? 'rgba(99, 102, 241, 0.12)' : 'var(--surface)'};">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-weight: 700; font-size: 0.85rem; color: ${isWinner ? 'var(--a1)' : 'var(--ink)'};">
+                            K${d.index}: ${d.directionName}
+                            ${isWinner ? ' 🏆 (Cực đại)' : ''}
+                        </span>
+                        <span style="font-weight: 800; color: ${isWinner ? 'var(--a1)' : 'var(--ink)'}; font-size: 0.95rem;">
+                            |g${d.index}| = ${d.absValue}
+                        </span>
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--muted); word-break: break-all;">
+                        ${d.formula} = <b>${d.convolutionValue}</b> → |${d.convolutionValue}| = <b>${d.absValue}</b>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+                </div>
+                <div style="margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 6px; font-weight: 700; color: var(--a1);">
+                    → Giá trị phản hồi lớn nhất: G = <b>${step.compass.maxValue}</b> (${step.compass.bestDirectionName})
+                </div>
+            </div>
+        `;
     }
 
     html += `
@@ -1156,6 +1417,20 @@ function initEventListeners() {
     }
     if (el.resetKernelBtn) {
         el.resetKernelBtn.addEventListener('click', () => applyPrewittPreset('standard'));
+    }
+
+    // Cấu hình & Mẫu Compass (La bàn 8 hướng)
+    if (el.btnCompassStd) {
+        el.btnCompassStd.addEventListener('click', () => applyCompassPreset('standard'));
+    }
+    if (el.btnCompassDiag) {
+        el.btnCompassDiag.addEventListener('click', () => applyCompassPreset('notebook'));
+    }
+    if (el.btnCompassKirsch) {
+        el.btnCompassKirsch.addEventListener('click', () => applyCompassPreset('kirsch'));
+    }
+    if (el.btnRotateCompassCCW) {
+        el.btnRotateCompassCCW.addEventListener('click', rotateCompassBaseCCW);
     }
 
     // Nút Tính kết quả (CHỈ KHI BẤM MỚI CHẠY)

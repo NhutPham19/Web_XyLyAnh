@@ -27,7 +27,8 @@ public record StepDetailDto(
     int[][] Window,
     MeanStepDto? Mean = null,
     MedianStepDto? Median = null,
-    PrewittStepDto? Prewitt = null
+    PrewittStepDto? Prewitt = null,
+    CompassStepDto? Compass = null
 );
 
 public record MeanStepDto(
@@ -60,6 +61,26 @@ public record PrewittStepDto(
     string FormulaGx,
     string FormulaGy,
     string FormulaG
+);
+
+public record CompassDirectionDetailDto(
+    int Index,
+    int Angle,
+    string DirectionName,
+    int[][] KernelOriginal,
+    int[][] KernelFlipped,
+    int ConvolutionValue,
+    int AbsValue,
+    string Formula
+);
+
+public record CompassStepDto(
+    int[][] BaseKernel,
+    List<CompassDirectionDetailDto> Directions,
+    int MaxValue,
+    int BestDirectionIndex,
+    string BestDirectionName,
+    string Formula
 );
 
 public record MatrixSizeDto(

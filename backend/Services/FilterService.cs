@@ -17,6 +17,59 @@ public class FilterService : IFilterService
         [ 1,  1,  1]
     ];
 
+    private static readonly int[][] DefaultCompassBaseKernel3x3 = [
+        [-1, 0, 1],
+        [-1, 0, 1],
+        [-1, 0, 1]
+    ];
+
+    // 8 ô viền xung quanh ô tâm (1,1) theo thứ tự ngược chiều kim đồng hồ (CCW)
+    private static readonly (int r, int c)[] PerimeterCcw = [
+        (0, 0), (1, 0), (2, 0), (2, 1), (2, 2), (1, 2), (0, 2), (0, 1)
+    ];
+
+    private static readonly string[] CompassDirectionNames = [
+        "0° (Hướng gốc K₀)",
+        "45° CCW (Hướng K₁)",
+        "90° CCW (Hướng K₂)",
+        "135° CCW (Hướng K₃)",
+        "180° CCW (Hướng K₄)",
+        "225° CCW (Hướng K₅)",
+        "270° CCW (Hướng K₆)",
+        "315° CCW (Hướng K₇)"
+    ];
+
+    private static int[][][] GenerateCompassKernelsCCW(int[][] baseKernel, int k)
+    {
+        int[][][] kernels = new int[8][][];
+        kernels[0] = baseKernel;
+
+        if (k != 3)
+        {
+            for (int d = 1; d < 8; d++) kernels[d] = baseKernel;
+            return kernels;
+        }
+
+        int centerVal = baseKernel[1][1];
+
+        for (int step = 1; step < 8; step++)
+        {
+            int[][] rot = new int[3][];
+            for (int r = 0; r < 3; r++) rot[r] = new int[3];
+            rot[1][1] = centerVal;
+
+            for (int p = 0; p < 8; p++)
+            {
+                var src = PerimeterCcw[p];
+                var dst = PerimeterCcw[(p + step) % 8];
+                rot[dst.r][dst.c] = baseKernel[src.r][src.c];
+            }
+            kernels[step] = rot;
+        }
+
+        return kernels;
+    }
+
     public FilterResponse ApplyFilter(MatrixFilterRequest request, List<WarningDto>? warnings = null)
     {
         int rows = request.Matrix.Length;
@@ -69,6 +122,20 @@ public class FilterService : IFilterService
             kernelYFlipped = FlipKernel180(kernelYOriginal, k);
         }
 
+        int[][][]? compassKernelsOriginal = null;
+        int[][][]? compassKernelsFlipped = null;
+
+        if (method == "COMPASS")
+        {
+            int[][] baseKernel = request.CompassConfig?.BaseKernel ?? DefaultCompassBaseKernel3x3;
+            compassKernelsOriginal = GenerateCompassKernelsCCW(baseKernel, k);
+            compassKernelsFlipped = new int[8][][];
+            for (int d = 0; d < 8; d++)
+            {
+                compassKernelsFlipped[d] = FlipKernel180(compassKernelsOriginal[d], k);
+            }
+        }
+
         var results = new CellResultDto[rows][];
 
         for (int i = 0; i < rows; i++)
@@ -94,6 +161,13 @@ public class FilterService : IFilterService
                             i, j, displayCoords, window, k,
                             kernelXOriginal!, kernelYOriginal!,
                             kernelXFlipped!, kernelYFlipped!,
+                            includeSteps);
+                        break;
+
+                    case "COMPASS":
+                        results[i][j] = ComputeCompass(
+                            i, j, displayCoords, window, k,
+                            compassKernelsOriginal!, compassKernelsFlipped!,
                             includeSteps);
                         break;
 
@@ -146,6 +220,7 @@ public class FilterService : IFilterService
                 K: k,
                 Method: upper,
                 PrewittConfig: request.PrewittConfig,
+                CompassConfig: request.CompassConfig,
                 Options: request.Options
             );
 
@@ -418,6 +493,90 @@ public class FilterService : IFilterService
             Exact: exact,
             Rounded1: rounded1,
             RoundedInt: roundedInt,
+            Step: step
+        );
+    }
+
+    private static CellResultDto ComputeCompass(
+        int row, int col, string displayCoords,
+        int[][] window, int k,
+        int[][][] kernelsOriginal,
+        int[][][] kernelsFlipped,
+        bool includeSteps)
+    {
+        var directionDetails = new List<CompassDirectionDetailDto>();
+        int maxAbsValue = int.MinValue;
+        int bestDirectionIndex = 0;
+
+        for (int d = 0; d < 8; d++)
+        {
+            int convVal = 0;
+            var terms = new List<string>();
+
+            for (int u = 0; u < k; u++)
+            {
+                for (int v = 0; v < k; v++)
+                {
+                    int w = window[u][v];
+                    int m = kernelsFlipped[d][u][v];
+                    int prod = w * m;
+                    convVal += prod;
+                    if (includeSteps)
+                    {
+                        terms.Add(m < 0 ? $"({w} × ({m}))" : $"({w} × {m})");
+                    }
+                }
+            }
+
+            int absVal = Math.Abs(convVal);
+            if (absVal > maxAbsValue)
+            {
+                maxAbsValue = absVal;
+                bestDirectionIndex = d;
+            }
+
+            if (includeSteps)
+            {
+                string expr = string.Join(" + ", terms);
+                string formula = $"Tích chập K{d} ({CompassDirectionNames[d]}, kernel lật 180°): {expr} = {convVal} → |{convVal}| = {absVal}";
+                directionDetails.Add(new CompassDirectionDetailDto(
+                    Index: d,
+                    Angle: d * 45,
+                    DirectionName: CompassDirectionNames[d],
+                    KernelOriginal: kernelsOriginal[d],
+                    KernelFlipped: kernelsFlipped[d],
+                    ConvolutionValue: convVal,
+                    AbsValue: absVal,
+                    Formula: formula
+                ));
+            }
+        }
+
+        StepDetailDto? step = null;
+        if (includeSteps)
+        {
+            string overallFormula = $"max(|g0|..|g7|) = max({string.Join(", ", directionDetails.Select(dd => dd.AbsValue))}) = {maxAbsValue} (đạt tại {CompassDirectionNames[bestDirectionIndex]})";
+            var compassStep = new CompassStepDto(
+                BaseKernel: kernelsOriginal[0],
+                Directions: directionDetails,
+                MaxValue: maxAbsValue,
+                BestDirectionIndex: bestDirectionIndex,
+                BestDirectionName: CompassDirectionNames[bestDirectionIndex],
+                Formula: overallFormula
+            );
+            step = new StepDetailDto(
+                Window: window,
+                Compass: compassStep
+            );
+        }
+
+        return new CellResultDto(
+            Row: row,
+            Col: col,
+            DisplayCoordinates: displayCoords,
+            Exact: new FractionDto(maxAbsValue, 1, maxAbsValue.ToString()),
+            Rounded1: maxAbsValue.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+            RoundedInt: maxAbsValue,
             Step: step
         );
     }
