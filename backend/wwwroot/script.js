@@ -73,6 +73,11 @@ const el = {
     gxContainer: document.getElementById('gx'),
     gyContainer: document.getElementById('gy'),
     resetKernelBtn: document.getElementById('rk'),
+    btnPrewittStd: document.getElementById('btnPrewittStd'),
+    btnPrewittDiag: document.getElementById('btnPrewittDiag'),
+    btnSwapGxGy: document.getElementById('btnSwapGxGy'),
+    labelGx: document.getElementById('labelGx'),
+    labelGy: document.getElementById('labelGy'),
 
     runBtn: document.getElementById('run'),
     runBtnText: document.getElementById('runBtnText'),
@@ -205,19 +210,18 @@ function renderInputMatrix(oldValues = null) {
                 input.dataset.pc = pc;
                 input.dataset.pad = 'false';
                 input.placeholder = `${r + 1},${c + 1}`;
+                input.setAttribute('inputmode', 'numeric');
+                input.setAttribute('pattern', '[0-9]*');
 
                 // Phục hồi giá trị cũ
                 if (oldValues && oldValues[r] && oldValues[r][c] !== undefined && oldValues[r][c] !== '') {
                     input.value = oldValues[r][c];
                 }
 
-                // Điều hướng bàn phím
+                // Điều hướng bàn phím máy tính
                 input.addEventListener('keydown', handleMatrixKeyNavigation);
 
-                // Chọn và giữ nguyên cửa sổ ngay từ lần ấn đầu tiên (hỗ trợ cả touch, click, focus)
-                input.addEventListener('pointerdown', () => {
-                    selectAndHighlightWindow(pr, pc);
-                });
+                // Highlight cửa sổ trượt khi focus (chạm hoặc click tự nhiên trên cả mobile và desktop)
                 input.addEventListener('focus', () => {
                     selectAndHighlightWindow(pr, pc);
                 });
@@ -512,7 +516,45 @@ function setMethod(method) {
     }
 }
 
-function renderPrewittKernels() {
+const PREWITT_PRESETS = {
+    standard: {
+        name: 'standard',
+        labelX: 'biên dọc',
+        labelY: 'biên ngang',
+        gx: [
+            [-1, 0, 1],
+            [-1, 0, 1],
+            [-1, 0, 1]
+        ],
+        gy: [
+            [-1, -1, -1],
+            [ 0,  0,  0],
+            [ 1,  1,  1]
+        ]
+    },
+    diagonal: {
+        name: 'diagonal',
+        labelX: 'chéo chính (đường số 0)',
+        labelY: 'chéo phụ (đường số 0)',
+        // Chuẩn xác 100% theo ảnh vở ghi của bạn:
+        // Gx: Đường chéo chính (0,0)-(1,1)-(2,2) là các số 0, nửa trên -1, nửa dưới 1
+        gx: [
+            [ 0, -1, -1],
+            [ 0,  0,  0],
+            [ 1,  1,  0]
+        ],
+        // Gy: Đường chéo phụ (2,0)-(1,1)-(0,2) là các số 0, cột trái -1, cột phải 1
+        gy: [
+            [-1,  0,  0],
+            [-1,  0,  1],
+            [ 0,  0,  1]
+        ]
+    }
+};
+
+let currentPrewittPreset = 'standard';
+
+function renderPrewittKernels(presetKey = currentPrewittPreset) {
     const k = currentK;
     el.gxContainer.innerHTML = '';
     el.gyContainer.innerHTML = '';
@@ -525,16 +567,9 @@ function renderPrewittKernels() {
     gridGy.className = 'grid';
     gridGy.style.setProperty('--c', k);
 
-    const defaultGx = [
-        [-1, 0, 1],
-        [-1, 0, 1],
-        [-1, 0, 1]
-    ];
-    const defaultGy = [
-        [-1, -1, -1],
-        [0, 0, 0],
-        [1, 1, 1]
-    ];
+    const preset = PREWITT_PRESETS[presetKey] || PREWITT_PRESETS.standard;
+    const defaultGx = preset.gx;
+    const defaultGy = preset.gy;
 
     for (let r = 0; r < k; r++) {
         for (let c = 0; c < k; c++) {
@@ -542,20 +577,59 @@ function renderPrewittKernels() {
             inx.type = 'number';
             inx.dataset.r = r;
             inx.dataset.c = c;
-            inx.value = (k === 3) ? defaultGx[r][c] : 0;
+            inx.setAttribute('inputmode', 'numeric');
+            inx.value = (k === 3 && defaultGx[r] && defaultGx[r][c] !== undefined) ? defaultGx[r][c] : 0;
             gridGx.appendChild(inx);
 
             const iny = document.createElement('input');
             iny.type = 'number';
             iny.dataset.r = r;
             iny.dataset.c = c;
-            iny.value = (k === 3) ? defaultGy[r][c] : 0;
+            iny.setAttribute('inputmode', 'numeric');
+            iny.value = (k === 3 && defaultGy[r] && defaultGy[r][c] !== undefined) ? defaultGy[r][c] : 0;
             gridGy.appendChild(iny);
         }
     }
 
     el.gxContainer.appendChild(gridGx);
     el.gyContainer.appendChild(gridGy);
+
+    // Cập nhật nhãn phụ
+    if (el.labelGx) el.labelGx.textContent = preset.labelX;
+    if (el.labelGy) el.labelGy.textContent = preset.labelY;
+
+    // Cập nhật active button
+    if (el.btnPrewittStd) el.btnPrewittStd.classList.toggle('active', presetKey === 'standard');
+    if (el.btnPrewittDiag) el.btnPrewittDiag.classList.toggle('active', presetKey === 'diagonal');
+}
+
+function applyPrewittPreset(presetKey) {
+    currentPrewittPreset = presetKey;
+    renderPrewittKernels(presetKey);
+}
+
+function swapPrewittKernels() {
+    const inputsGx = el.gxContainer.querySelectorAll('input');
+    const inputsGy = el.gyContainer.querySelectorAll('input');
+    if (inputsGx.length === 0 || inputsGy.length === 0 || inputsGx.length !== inputsGy.length) return;
+
+    // Hoán đổi từng ô giữa Gx và Gy
+    for (let i = 0; i < inputsGx.length; i++) {
+        const temp = inputsGx[i].value;
+        inputsGx[i].value = inputsGy[i].value;
+        inputsGy[i].value = temp;
+    }
+
+    // Hoán đổi nhãn hướng
+    if (el.labelGx && el.labelGy) {
+        const tempLabel = el.labelGx.textContent;
+        el.labelGx.textContent = el.labelGy.textContent;
+        el.labelGy.textContent = tempLabel;
+    }
+
+    // Khi đã đổi chỗ thủ công, bỏ trạng thái active của chip preset
+    if (el.btnPrewittStd) el.btnPrewittStd.classList.remove('active');
+    if (el.btnPrewittDiag) el.btnPrewittDiag.classList.remove('active');
 }
 
 function getKernelData(container) {
@@ -954,11 +1028,10 @@ function renderStepDetail(r, c) {
         html += `
             <div class="calc-section-title">Công thức Phát hiện biên (Prewitt Edge Detection):</div>
             <div class="calc-formula-card">
-                <div style="color: var(--muted); font-size: 0.8rem; margin-bottom: 4px;">* Quy ước tích chập: Kernel lật 180° trước khi nhân với cửa sổ.</div>
-                <div><b>Gx (Biên dọc):</b></div>
+                <div><b>Gx (${el.labelGx ? el.labelGx.textContent : 'Hướng 1'}):</b></div>
                 <div>${step.prewitt.formulaGx}</div>
                 <div>→ Gx = <b>${step.prewitt.gx}</b> (|Gx| = <b>${step.prewitt.absGx}</b>)</div>
-                <div style="margin-top: 8px;"><b>Gy (Biên ngang):</b></div>
+                <div style="margin-top: 8px;"><b>Gy (${el.labelGy ? el.labelGy.textContent : 'Hướng 2'}):</b></div>
                 <div>${step.prewitt.formulaGy}</div>
                 <div>→ Gy = <b>${step.prewitt.gy}</b> (|Gy| = <b>${step.prewitt.absGy}</b>)</div>
                 <div style="margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 6px;">
@@ -1071,8 +1144,19 @@ function initEventListeners() {
         });
     });
 
-    // Đặt lại kernel Prewitt
-    el.resetKernelBtn.addEventListener('click', renderPrewittKernels);
+    // Cấu hình & Mẫu Prewitt
+    if (el.btnPrewittStd) {
+        el.btnPrewittStd.addEventListener('click', () => applyPrewittPreset('standard'));
+    }
+    if (el.btnPrewittDiag) {
+        el.btnPrewittDiag.addEventListener('click', () => applyPrewittPreset('diagonal'));
+    }
+    if (el.btnSwapGxGy) {
+        el.btnSwapGxGy.addEventListener('click', swapPrewittKernels);
+    }
+    if (el.resetKernelBtn) {
+        el.resetKernelBtn.addEventListener('click', () => applyPrewittPreset('standard'));
+    }
 
     // Nút Tính kết quả (CHỈ KHI BẤM MỚI CHẠY)
     el.runBtn.addEventListener('click', executeFilter);

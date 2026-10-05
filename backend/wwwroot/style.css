@@ -361,7 +361,7 @@ label {
   max-width: 100%;
   margin: 0 auto;
 }
-.grid input, .grid .c {
+.grid .c {
   height: var(--cell-height, 48px);
   min-width: 0;
   border: 1.5px solid var(--line);
@@ -378,7 +378,26 @@ label {
   box-shadow: var(--sh-xs);
   transition: transform .12s, box-shadow .12s, border-color .18s, background-color .25s ease, color .2s ease;
 }
-.grid input:focus-visible { transform: translateY(-2px); box-shadow: var(--sh-sm), 0 0 0 3px var(--a-glow); border-color: var(--a2); }
+.grid input {
+  height: var(--cell-height, 48px);
+  min-width: 0;
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--cell);
+  color: var(--ink);
+  text-align: center;
+  font: 700 .92rem/1 inherit;
+  font-variant-numeric: tabular-nums;
+  display: block; /* Tránh bug display:flex trên input của WebKit/Mobile */
+  padding: 0 3px;
+  box-shadow: var(--sh-xs);
+  touch-action: manipulation;
+  -webkit-user-select: text;
+  user-select: text;
+  transition: box-shadow .12s, border-color .18s, background-color .25s ease, color .2s ease;
+}
+.grid input:focus-visible { box-shadow: var(--sh-sm), 0 0 0 3px var(--a-glow); border-color: var(--a2); }
 .grid button.c { cursor: pointer; }
 .grid button.c:hover { box-shadow: var(--sh-md); transform: translateY(-2px); border-color: var(--a2); }
 .grid button.c:active { transform: translateY(0); }
@@ -498,12 +517,78 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--a2); outlin
 /* Kernel labels */
 .kernel-label {
   font-size: .78rem;
-  font-weight: 500;
-  color: var(--muted);
-  padding: 2px 8px;
-  background: var(--pad);
+  font-weight: 600;
+  color: var(--a1);
+  padding: 3px 10px;
+  background: var(--hi);
+  border: 1px solid var(--hi-border);
   border-radius: 999px;
-  margin-left: 4px;
+  margin-left: 6px;
+}
+
+/* ================================================================
+   PREWITT TOOLBAR & PRESETS
+================================================================ */
+.prewitt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0 16px;
+  padding: 10px 14px;
+  background: var(--pad);
+  border: 1.5px dashed var(--hi-border);
+  border-radius: var(--radius-md);
+}
+.prewitt-presets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.preset-chip {
+  border: 1.5px solid var(--line);
+  background: var(--cell);
+  color: var(--ink-sub);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font: 600 .82rem inherit;
+  cursor: pointer;
+  transition: all .16s ease;
+  box-shadow: var(--sh-xs);
+}
+.preset-chip:hover {
+  background: var(--hi);
+  border-color: var(--a2);
+  color: var(--a1);
+  transform: translateY(-1px);
+}
+.preset-chip.active {
+  background: var(--a1);
+  color: #fff;
+  border-color: var(--a1);
+  box-shadow: 0 3px 10px var(--a-glow);
+}
+.kernel-wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+.kernel-box {
+  background: var(--cell);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  box-shadow: var(--sh-xs);
+}
+.kernel-box h3 {
+  margin: 0 0 12px;
+  font-size: .95rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 /* ================================================================
@@ -866,7 +951,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--a2); outlin
 .grid input.c-data:focus {
   border-color: var(--a1);
   box-shadow: 0 0 0 3px var(--a-glow);
-  transform: scale(1.05);
+  transform: none; /* Tránh mất focus trên mobile */
   z-index: 2;
 }
 .grid .c.pad {
@@ -891,15 +976,21 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--a2); outlin
   border-width: 2px !important;
   box-shadow: 0 0 0 2px var(--a-glow) !important;
 }
-.grid .window-center,
-.grid .c.window-center,
+.grid .c.window-center {
+  background: var(--hi) !important;
+  border-color: var(--a1) !important;
+  border-width: 2.5px !important;
+  box-shadow: 0 0 0 4px var(--a-glow) !important;
+  transform: scale(1.08) !important;
+  z-index: 10 !important;
+}
 .grid input.window-center,
 .grid input.c-data.window-center {
   background: var(--hi) !important;
   border-color: var(--a1) !important;
   border-width: 2.5px !important;
   box-shadow: 0 0 0 4px var(--a-glow) !important;
-  transform: scale(1.08) !important;
+  transform: none !important; /* Tuyệt đối không scale input để bàn phím ảo không bị tắt */
   z-index: 10 !important;
 }
 .window-info-badge {

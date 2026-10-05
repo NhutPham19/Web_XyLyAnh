@@ -135,14 +135,27 @@
             </div>
 
             <div id="kers" hidden>
-                <h3>Kernel Gx <span class="kernel-label">biên dọc</span></h3>
-                <div class="scroll"><div id="gx"></div></div>
-                <h3>Kernel Gy <span class="kernel-label">biên ngang</span></h3>
-                <div class="scroll"><div id="gy"></div></div>
-                <div class="actions">
-                    <button class="ghost" id="rk" type="button">Đặt lại kernel Prewitt</button>
+                <div class="prewitt-toolbar">
+                    <span class="toolbar-label">⚡ Mẫu mặt nạ:</span>
+                    <div class="prewitt-presets" role="group" aria-label="Mẫu mặt nạ Prewitt">
+                        <button type="button" class="preset-chip active" id="btnPrewittStd" title="Mặt nạ chuẩn: Gx dọc, Gy ngang">Chuẩn (Ngang / Dọc)</button>
+                        <button type="button" class="preset-chip" id="btnPrewittDiag" title="Mặt nạ chéo: Gx chéo chính, Gy chéo phụ theo vở ghi">Biên chéo (Vở ghi)</button>
+                        <button type="button" class="preset-chip" id="btnSwapGxGy" title="Hoán đổi ma trận Gx và Gy cho nhau">⇄ Đổi chỗ Gx ↔ Gy</button>
+                        <button type="button" class="preset-chip" id="rk" title="Khôi phục mặt nạ về ban đầu">Đặt lại mặc định</button>
+                    </div>
                 </div>
-                <p class="hint">Có thể sửa từng ô. <b>Quy ước tích chập Prewitt:</b> kernel được lật 180° trước khi nhân với cửa sổ và lấy trị tuyệt đối.</p>
+
+                <div class="kernel-wrapper">
+                    <div class="kernel-box">
+                        <h3>Kernel Gx <span class="kernel-label" id="labelGx">biên dọc</span></h3>
+                        <div class="scroll"><div id="gx"></div></div>
+                    </div>
+                    <div class="kernel-box">
+                        <h3>Kernel Gy <span class="kernel-label" id="labelGy">biên ngang</span></h3>
+                        <div class="scroll"><div id="gy"></div></div>
+                    </div>
+                </div>
+                <p class="hint">💡 Bạn có thể bấm chọn mẫu nhanh ở trên hoặc tự do sửa từng ô. <b>Quy ước tích chập Prewitt:</b> kernel được lật 180° trước khi nhân với cửa sổ.</p>
             </div>
         </section>
 
